@@ -1,6 +1,7 @@
 import * as THREE from './libs/three.module.js'
-import {GLTFLoader} from  './libs/GLTFLoader.js'
-import {DRACOLoader} from "./libs/DRACOLoader.js";
+import { DRACOLoader } from "./libs/DRACOLoader.js"
+import { GLTFLoader } from "./libs/GLTFLoader.js"
+import { OrbitControls } from "./libs/OrbitControls.js"
 
 var canvas, scene, dirLight, renderer, camera
 var playerObject
@@ -11,16 +12,27 @@ var speed = 0.2
 var randBuildingPosLeft
 var randBuildingPosRight
 
+var enemiesNumber = 20
+
 var enemiesArray = []
+
+//Colliders
+var collider_system;
+var colliders = [];
 
 var keyboard = {}
 
 function init(){
+    setUpColliderSystem()
     setUpCamera()
     setUpLight()
     setUpScene()
     setUpSkybox()
     animate()
+}
+
+function setUpColliderSystem() {
+    collider_system = new THREEx.ColliderSystem()
 }
 
 function setUpSkybox(){
@@ -94,6 +106,8 @@ function setUpCamera() {
     renderer.setPixelRatio(window.devicePixelRatio * 0.8) // resolution
     renderer.shadowMap.enabled = true
     renderer.gammaOutput = true
+
+    //const controls = new OrbitControls( camera, renderer.domElement );
 }
 
 function setUpScene() {
@@ -131,14 +145,26 @@ function loadFloor(){
 function animate() {
     requestAnimationFrame(animate)
 
-    enemiesArray.forEach(enemy => {
+    //collisions
+    for (var i = 0; i < colliders.length ; i++) {
+        colliders[i].update();
+      }
+    collider_system.computeAndNotify(colliders);
+
+
+    //movements
+    for(var i=0; i < enemiesArray.length; i++){
+        var enemy = enemiesArray[i]
+
+        //console.log(enemy)
+
         if(enemy.position.z <= step/2){
             enemy.position.z += speed
         } else {
             enemy.position.z = -step/2
             enemy.position.x = getRandomValue(-3, 3)
         }
-    });
+    }
 
     if(floor.position.z <= step){
         floor.position.z += speed
@@ -189,7 +215,7 @@ function loadEnemies(){
 
 
     loader.load('assets/player/zombie.gltf', function (gltf) {
-        for (var i = 0; i < 20; i++) {
+        for (var i = 0; i < enemiesNumber; i++) {
             var zombieObject = cloneGltf(gltf).scene
             scene.add(zombieObject)
 
@@ -227,8 +253,21 @@ function loadEnemies(){
             createjs.Tween.get(zombie_neck.rotation, { loop: true }).to({ x: -20 * Math.PI / 180 }, 500, createjs.Ease.linear).to({ x: Math.PI / 180 }, 500, createjs.Ease.linear);
 
             zombie.scale.set(1.5, 1.5, 1.5)
-            zombie.position.set(getRandomValue(-3, 3), 1.6, (i * 160/20) - 80)
+            zombie.position.set(getRandomValue(-3, 3), 1.6, (i * step/enemiesNumber) - 80)
             enemiesArray.push(zombie)
+
+
+            //Collisions
+            var zombie_box = new THREE.BoxGeometry(1, 3, 1); 
+            var zombie_material = new THREE.MeshBasicMaterial({transparent: true, opacity: 0.1, color:0x00ff00});
+            var zombie_hitBox = new THREE.Mesh(zombie_box, zombie_material);
+            zombie_hitBox.visible = false;
+            zombie_hitBox.name= "zombie"
+            scene.add(zombie_hitBox)
+            zombie.add(zombie_hitBox)
+
+            var colliderZombie = THREEx.Collider.createFromObject3d(zombie_hitBox)
+            colliders.push(colliderZombie)
         }
     })
 
@@ -326,49 +365,73 @@ function loadPlayer() {
         //console.log(gltf)
         playerObject = gltf.scene
         scene.add(playerObject)
-        loadPlayerHierarchy()
+
+        player = playerObject.getObjectByName("HipsCtrl");
+        torso = playerObject.getObjectByName("Chest");
+        head = playerObject.getObjectByName("Head");
+        neck = playerObject.getObjectByName("Neck");
+        leg_left = playerObject.getObjectByName("LeftLeg");
+        up_leg_left = playerObject.getObjectByName("LeftUpLeg");
+        leg_right = playerObject.getObjectByName("RightLeg");
+        up_leg_right = playerObject.getObjectByName("RightUpLeg");
+        arm_left = playerObject.getObjectByName("LeftArm");
+        forearm_left = playerObject.getObjectByName("LeftForeArm");
+        hand_left = playerObject.getObjectByName("LeftHand");
+        arm_right = playerObject.getObjectByName("RightArm");
+        forearm_right = playerObject.getObjectByName("RightForeArm");
+        hand_right = playerObject.getObjectByName("RightHand");
+
+        arm_right.rotation.z = 180 * Math.PI / 180;
+        arm_right.rotation.x = 230 * Math.PI / 180;
+
+        arm_left.rotation.z = 180 * Math.PI / 180;
+        arm_left.rotation.x = 140 * Math.PI / 180;
+
+        player.scale.set(1.2, 1.2, 1.2)
+        player.position.y = 1.3
+
+        player.rotation.y = 180 * Math.PI / 180;
+        player.rotation.x = 0 * Math.PI / 180;
+
+        up_leg_right.rotation.x = 140 * Math.PI / 180;
+        forearm_left.rotation.x = 90 * Math.PI / 180;
+
+        //Collisions
+        var player_box = new THREE.BoxGeometry(1, 3, 1); 
+        var player_material = new THREE.MeshBasicMaterial({transparent: true, opacity: 0.1, color:0xff0000});
+        var player_hitBox = new THREE.Mesh(player_box, player_material);
+        player_hitBox.visible = false;
+        scene.add(player_hitBox)
+        player.add(player_hitBox)
+
+        var colliderPlayer = THREEx.Collider.createFromObject3d(player_hitBox)
+        colliders.push(colliderPlayer)
+
+        colliderPlayer.addEventListener('contactEnter', function (collider) {
+            if(collider.object3d.name == "zombie"){
+                zombieHitPlayer()
+            }
+        })
+
+        animatePlayer()
     })
-}
-
-function loadPlayerHierarchy() {
-    if (playerObject)  {
-      player = playerObject.getObjectByName("HipsCtrl");
-      torso = playerObject.getObjectByName("Chest");
-      head = playerObject.getObjectByName("Head");
-      neck = playerObject.getObjectByName("Neck");
-      leg_left = playerObject.getObjectByName("LeftLeg");
-      up_leg_left = playerObject.getObjectByName("LeftUpLeg");
-      leg_right = playerObject.getObjectByName("RightLeg");
-      up_leg_right = playerObject.getObjectByName("RightUpLeg");
-      arm_left = playerObject.getObjectByName("LeftArm");
-      forearm_left = playerObject.getObjectByName("LeftForeArm");
-      hand_left = playerObject.getObjectByName("LeftHand");
-      arm_right = playerObject.getObjectByName("RightArm");
-      forearm_right = playerObject.getObjectByName("RightForeArm");
-      hand_right = playerObject.getObjectByName("RightHand");
-
-      arm_right.rotation.z = 180 * Math.PI/180;
-      arm_right.rotation.x = 230 * Math.PI/180;
-
-      arm_left.rotation.z = 180 * Math.PI/180;
-      arm_left.rotation.x = 140 * Math.PI/180;
-
-      player.scale.set(1.2, 1.2, 1.2)
-      player.position.y = 1.3
-      
-      player.rotation.y = 180 * Math.PI/180;
-      player.rotation.x = 0 * Math.PI/180;
-
-      up_leg_right.rotation.x = 140 * Math.PI/180;
-      forearm_left.rotation.x = 90 * Math.PI/180;
-
-      animatePlayer()
-    }
   }
 
+  function zombieHitPlayer() {
+    playerObject.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.material.transparent = true;
+        var materialChild = child.material;
+        createjs.Tween.get(materialChild).to({ opacity: 0}, 200, createjs.Ease.linear).to({ opacity: 1 }, 200, createjs.Ease.linear)
+        .to({ opacity: 0}, 200, createjs.Ease.linear).to({ opacity: 1 }, 200, createjs.Ease.linear)
+        .to({ opacity: 0}, 200, createjs.Ease.linear).to({ opacity: 1 }, 200, createjs.Ease.linear)
+      }
+    });
+  }
+  
   function keyDown(event){
     keyboard[event.keyCode] = true
-    console.log(event.keyCode)
+    //console.log(event.keyCode)
   }
 
   function keyUp(event){
