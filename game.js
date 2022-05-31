@@ -151,7 +151,7 @@ function animatePlayer(){
 }
 
 function setUpLight() {
-    dirLight = new THREE.DirectionalLight('white', 2)
+    dirLight = new THREE.DirectionalLight('white', 1)
     dirLight.position.set(0, 10, 4)
 }
 
@@ -162,7 +162,7 @@ function setUpCamera() {
     camera.rotation.x = (-40)*  Math.PI / 180
 
     renderer = new THREE.WebGLRenderer({
-        antialias: false,
+        antialias: true,
         canvas: canvas
     })
 
@@ -174,7 +174,7 @@ function setUpCamera() {
     renderer.gammaOutput = true
     window.addEventListener( 'resize', resize, false);
 
-    //const controls = new OrbitControls( camera, renderer.domElement );
+    const controls = new OrbitControls( camera, renderer.domElement );
 }
 
 function resize(){
@@ -198,17 +198,17 @@ function loadFloor(){
     const floorLenght = step
 
     const textureLoader = new THREE.TextureLoader();
-    const grassNormalMap = textureLoader.load("./assets/textures/sand.jpg");
-    floor = new THREE.Mesh(new THREE.BoxGeometry(floorLenght, floorLenght, 1), new THREE.MeshToonMaterial({ color: 0x00ff00, normalMap: grassNormalMap }));
+    const grassNormalMap = textureLoader.load("./assets/textures/grass_normal_map.png");
+    floor = new THREE.Mesh(new THREE.BoxGeometry(floorLenght, floorLenght, 1), new THREE.MeshPhongMaterial({ color: 0x0a7d15, normalMap: grassNormalMap }));
     floor.rotation.x = ( 90)*  Math.PI / 180
     floor.material.normalMap.wrapS = floor.material.normalMap.wrapT = THREE.RepeatWrapping
-    floor.material.normalMap.repeat.x = floor.material.normalMap.repeat.y = 4
+    floor.material.normalMap.repeat.x = floor.material.normalMap.repeat.y = 10
     floor.position.set(0, -1, 0);
 
-    floor1 = new THREE.Mesh(new THREE.BoxGeometry(floorLenght, floorLenght, 1), new THREE.MeshToonMaterial({ color: 0x00ff00, normalMap: grassNormalMap }));
+    floor1 = new THREE.Mesh(new THREE.BoxGeometry(floorLenght, floorLenght, 1), new THREE.MeshPhongMaterial({ color: 0x0a7d15, normalMap: grassNormalMap }));
     floor1.rotation.x = ( 90)*  Math.PI / 180
     floor1.material.normalMap.wrapS = floor1.material.normalMap.wrapT = THREE.RepeatWrapping
-    floor1.material.normalMap.repeat.x = floor1.material.normalMap.repeat.y = 3
+    floor1.material.normalMap.repeat.x = floor1.material.normalMap.repeat.y = 10
     floor1.position.set(0, -1, -floorLenght);
 
     scene.add(floor);
@@ -248,11 +248,11 @@ function animate() {
     }
     
     if(floor.position.z > step){
-        floor.position.set(0, -1, -step)
+        floor.position.set(0, -1, -step + speed)
     }
 
     if(floor1.position.z > step){
-        floor1.position.set(0, -1, -step)
+        floor1.position.set(0, -1, -step + speed)
     }
 
     if(keyboard[39] && player.position.x <= 3){ // left arrow
@@ -354,28 +354,62 @@ function loadProps() {
     randBuildingPosLeft =  getPropPositions()
     randBuildingPosRight =  getPropPositions()
 
-    loader.load('assets/models/palm_long.gltf', function (gltf) {
+    loader.load('assets/models/light_curved.glb', function (glb) {
 
-        for(var i = 0; i < 30; i++){
-
-            //RIGHT
-            var prop = gltf.scene.clone()
-            prop.scale.set(3, 3, 3)
-            prop.position.set( -10 + getRandomValue(-1, 1), (i * 5.3) -80, 0)
-            scene.add(prop)
-            prop.rotation.x = ( -90)*  Math.PI / 180
-            floor.add(prop)
-            floor1.add(prop.clone())
-
-            //LEFT
-            var prop = gltf.scene.clone()
-            prop.scale.set(3, 3, 3)
-            prop.position.set(-23 + getRandomValue(-1, 1), (i * 5.3) -80, 0)
-            scene.add(prop)
-            prop.rotation.x = ( -90)*  Math.PI / 180
-            floor.add(prop)
-            floor1.add(prop.clone())
+        for(var i = 0; i < 10; i++){
+            if (i%2 == 0)
+            {
+                //RIGHT
+                var prop = glb.scene.clone()
+                prop.scale.set(10, 10, 10)
+                prop.position.set( 14 , (i * step/10) -80, 0)
+                scene.add(prop)
+                prop.rotation.x = ( -90)*  Math.PI / 180
+                prop.rotation.y = ( -90)*  Math.PI / 180
+                floor.add(prop)
+                floor1.add(prop.clone())
+            } else
+            {
+                //LEFT
+                var prop = glb.scene.clone()
+                prop.scale.set(10, 10, 10)
+                prop.position.set( -13 , (i * step/10) -80, 0)
+                scene.add(prop)
+                prop.rotation.x = ( -90)*  Math.PI / 180
+                prop.rotation.y = ( 90)*  Math.PI / 180
+                floor.add(prop)
+                floor1.add(prop.clone())
+            }
         }
+        
+    })
+
+    loader.load('assets/models/treeLarge.glb', function (glb) {
+        loader.load('assets/models/treeFallLarge.glb', function (glb2) {
+
+            for(var i = 0; i < 30; i++){
+
+                //RIGHT
+                var randGlb = Math.random() > 0.5 ? glb : glb2;
+                var prop = randGlb.scene.clone()
+                prop.scale.set(4, 4, 4)
+                prop.position.set( -8 + getRandomValue(-1, 1), (i * 5.3) -80, 0)
+                scene.add(prop)
+                prop.rotation.x = ( -90)*  Math.PI / 180
+                floor.add(prop)
+                floor1.add(prop.clone())
+
+                //LEFT
+                var randGlb = Math.random() > 0.5 ? glb : glb2;
+                var prop = randGlb.scene.clone()
+                prop.scale.set(4, 4, 4)
+                prop.position.set( 8 + getRandomValue(-1, 1), (i * 5.3) -80, 0)
+                scene.add(prop)
+                prop.rotation.x = ( -90)*  Math.PI / 180
+                floor.add(prop)
+                floor1.add(prop.clone())
+            }
+        })
     })
 
     loader.load('assets/models/road_straight.glb', function (glb) {
