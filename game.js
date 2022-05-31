@@ -3,7 +3,7 @@ import { DRACOLoader } from "./libs/DRACOLoader.js"
 import { GLTFLoader } from "./libs/GLTFLoader.js"
 import { OrbitControls } from "./libs/OrbitControls.js"
 
-var canvas, scene, dirLight, renderer, camera
+var canvas, scene, dirLight, renderer, camera, skybox, materialArraySky
 var playerObject
 var torso, player, leg_left, up_leg_left, leg_right, up_leg_right, arm_left, forearm_left, hand_left, head, arm_right, forearm_right, hand_right, neck, floor, floor1
 var step = 160
@@ -38,15 +38,14 @@ function init(){
     setUpUI()
     setUpColliderSystem()
     setUpCamera()
-    setUpLight()
     setUpScene()
     setUpSkybox()
+    setUpLight()
     animate()
 }
 function setUpSpeed(){
     var loadedSpeed = window.localStorage.getItem("difficulty")
     speed = loadedSpeed === null ? speed : loadedSpeed / 200
-    console.log(speed)
 }
 function setUpClock(){
     clock = new THREE.Clock();
@@ -100,7 +99,7 @@ function setUpColliderSystem() {
 }
 
 function setUpSkybox(){
-    var materialArray = []
+    materialArraySky = []
     var texture_down = new THREE.TextureLoader().load("/assets/skybox/day_down.png")
     var texture_left = new THREE.TextureLoader().load("/assets/skybox/day_left.png")
     var texture_front = new THREE.TextureLoader().load("/assets/skybox/day_front.png")
@@ -108,18 +107,18 @@ function setUpSkybox(){
     var texture_up = new THREE.TextureLoader().load("/assets/skybox/day_up.png")
     var texture_right = new THREE.TextureLoader().load("/assets/skybox/day_right.png")
 
-    materialArray.push(new THREE.MeshBasicMaterial({map: texture_front}))
-    materialArray.push(new THREE.MeshBasicMaterial({map: texture_back}))
-    materialArray.push(new THREE.MeshBasicMaterial({map: texture_up}))
-    materialArray.push(new THREE.MeshBasicMaterial({map: texture_down}))
-    materialArray.push(new THREE.MeshBasicMaterial({map: texture_right}))
-    materialArray.push(new THREE.MeshBasicMaterial({map: texture_left}))
+    materialArraySky.push(new THREE.MeshBasicMaterial({map: texture_front}))
+    materialArraySky.push(new THREE.MeshBasicMaterial({map: texture_back}))
+    materialArraySky.push(new THREE.MeshBasicMaterial({map: texture_up}))
+    materialArraySky.push(new THREE.MeshBasicMaterial({map: texture_down}))
+    materialArraySky.push(new THREE.MeshBasicMaterial({map: texture_right}))
+    materialArraySky.push(new THREE.MeshBasicMaterial({map: texture_left}))
 
     for(let i=0; i<6; i++)
-        materialArray[i].side = THREE.BackSide
+        materialArraySky[i].side = THREE.BackSide
 
-    var skyboxGeo = new THREE.BoxGeometry(100, 100, 100)
-    var skybox = new THREE.Mesh(skyboxGeo, materialArray)
+    var skyboxGeo = new THREE.BoxGeometry(100, 100, 160)
+    skybox = new THREE.Mesh(skyboxGeo, materialArraySky)
     scene.add(skybox)
 
 }
@@ -151,7 +150,16 @@ function animatePlayer(){
 }
 
 function setUpLight() {
-    dirLight = new THREE.DirectionalLight('white', 1)
+    var loadedScenario = window.localStorage.getItem("scenario")
+    if(loadedScenario == "true" || loadedScenario === null){
+        dirLight = new THREE.DirectionalLight('white', 1)
+        skybox.material = materialArraySky
+        
+    }else {
+        dirLight = new THREE.DirectionalLight('skyblue', 0.8)
+        skybox.material = new THREE.MeshToonMaterial({color: "violet"})
+    }
+    scene.add(dirLight)
     dirLight.position.set(0, 10, 4)
 }
 
@@ -174,7 +182,7 @@ function setUpCamera() {
     renderer.gammaOutput = true
     window.addEventListener( 'resize', resize, false);
 
-    const controls = new OrbitControls( camera, renderer.domElement );
+    //const controls = new OrbitControls( camera, renderer.domElement );
 }
 
 function resize(){
@@ -187,7 +195,6 @@ function setUpScene() {
     scene = new THREE.Scene()
 
     loadPlayer()
-    scene.add(dirLight)
     scene.add(camera)
     loadFloor()
     loadProps()
@@ -414,7 +421,7 @@ function loadProps() {
 
     loader.load('assets/models/road_straight.glb', function (glb) {
             var prop = glb.scene.clone()
-            prop.scale.set(100, 10, 10)
+            prop.scale.set(180, 10, 10)
             prop.position.set( 8, 0, -20)
             scene.add(prop)
             prop.rotation.y = ( -90)*  Math.PI / 180
