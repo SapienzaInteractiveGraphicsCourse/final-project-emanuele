@@ -25,6 +25,10 @@ var lifeCount = 3
 var lifeLabel
 var scoreLabel
 
+//Light poles
+var pointLights = []
+var isDay = true
+
 
 //Clock
 var clock
@@ -38,9 +42,9 @@ function init(){
     setUpUI()
     setUpColliderSystem()
     setUpCamera()
-    setUpScene()
     setUpSkybox()
     setUpLight()
+    setUpScene()
     animate()
 }
 function setUpSpeed(){
@@ -119,7 +123,6 @@ function setUpSkybox(){
 
     var skyboxGeo = new THREE.BoxGeometry(100, 100, 160)
     skybox = new THREE.Mesh(skyboxGeo, materialArraySky)
-    scene.add(skybox)
 
 }
 
@@ -152,15 +155,17 @@ function animatePlayer(){
 function setUpLight() {
     var loadedScenario = window.localStorage.getItem("scenario")
     if(loadedScenario == "true" || loadedScenario === null){
-        dirLight = new THREE.DirectionalLight('white', 1)
+        dirLight = new THREE.DirectionalLight('white', 2)
         skybox.material = materialArraySky
+        isDay = true
         
     }else {
         dirLight = new THREE.DirectionalLight('skyblue', 0.8)
         skybox.material = new THREE.MeshToonMaterial({color: "violet"})
+        isDay = false
     }
-    scene.add(dirLight)
-    dirLight.position.set(0, 10, 4)
+
+    dirLight.position.set(5, 10, 5)
 }
 
 function setUpCamera() {
@@ -169,8 +174,17 @@ function setUpCamera() {
     camera.position.set(0, 10, 10) // 0, 10, 5
     camera.rotation.x = (-40)*  Math.PI / 180
 
+    var loadedAntialias = window.localStorage.getItem("antialias")
+    var antialias = true;
+    
+    if(loadedAntialias == "true" || loadedAntialias === null){
+        antialias = true;
+    }else {
+        antialias = false;
+    }
+
     renderer = new THREE.WebGLRenderer({
-        antialias: true,
+        antialias: antialias,
         canvas: canvas
     })
 
@@ -193,9 +207,11 @@ function resize(){
 
 function setUpScene() {
     scene = new THREE.Scene()
+    scene.add(dirLight)
+    scene.add(skybox)
+    scene.add(camera)
 
     loadPlayer()
-    scene.add(camera)
     loadFloor()
     loadProps()
     loadEnemies()
@@ -236,10 +252,8 @@ function animate() {
 
 
     //movements
-    for(var i=0; i < enemiesArray.length; i++){
+    for(var i=0; i < enemiesArray.length; i++){ //enemies
         var enemy = enemiesArray[i]
-
-        //console.log(enemy)
 
         if(enemy.position.z <= step/2){
             enemy.position.z += speed
@@ -249,7 +263,17 @@ function animate() {
         }
     }
 
-    if(floor.position.z <= step){
+    for(var i=0; i < pointLights.length; i++){ //light poles
+        var light = pointLights[i]
+
+        if(light.position.z <= step/2){
+            light.position.z += speed
+        } else {
+            light.position.z = -step/2
+        }
+    }
+
+    if(floor.position.z <= step){ // floors
         floor.position.z += speed
         floor1.position.z += speed
     }
@@ -361,6 +385,7 @@ function loadProps() {
     randBuildingPosLeft =  getPropPositions()
     randBuildingPosRight =  getPropPositions()
 
+
     loader.load('assets/models/light_curved.glb', function (glb) {
 
         for(var i = 0; i < 10; i++){
@@ -375,6 +400,15 @@ function loadProps() {
                 prop.rotation.y = ( -90)*  Math.PI / 180
                 floor.add(prop)
                 floor1.add(prop.clone())
+
+                if(!isDay){
+                    //Light
+                    var pointLight = new THREE.PointLight("yellow", 3, 10, 1)
+                    pointLight.position.set(4.5, 5, (i * step/10) -80)
+                    pointLights.push(pointLight)
+                    scene.add(pointLight)
+                }
+
             } else
             {
                 //LEFT
@@ -386,6 +420,14 @@ function loadProps() {
                 prop.rotation.y = ( 90)*  Math.PI / 180
                 floor.add(prop)
                 floor1.add(prop.clone())
+
+                if(!isDay){
+                    //Light
+                    var pointLight = new THREE.PointLight("yellow", 3, 10, 1)
+                    pointLight.position.set(-3.5, 5, (i * step/10) -80)
+                    pointLights.push(pointLight)
+                    scene.add(pointLight)
+                }
             }
         }
         
