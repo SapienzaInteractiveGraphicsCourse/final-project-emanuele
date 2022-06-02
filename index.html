@@ -73,7 +73,8 @@
             padding: 0;
             border: 1px solid #888;
             width: 20%;
-            top: 10%;
+            top: 5%;
+            overflow: auto;
             box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
             -webkit-animation-name: animatetop;
             -webkit-animation-duration: 0.4s;
@@ -84,12 +85,12 @@
         /* Add Animation */
         @-webkit-keyframes animatetop {
         from {top:50%; opacity:0} 
-        to {top: 10%; opacity:1}
+        to {top: 5%; opacity:1}
         }
 
         @keyframes animatetop {
         from {top: 50%; opacity:0}
-        to {top: 10%; opacity:1}
+        to {top: 5%; opacity:1}
         }
   
         /* The Close Button */
@@ -299,6 +300,23 @@
                     src="./assets/textures/night.jpg"/>
                 </label>
 
+                <p>Select Player:</p>
+                <input 
+                    type="radio" name="player" 
+                    id="player1" class="input-hidden" onclick="setPlayer(0)" checked/>
+                <label for="player1">
+                    <img 
+                    src="./assets/textures/player1.jpg" />
+                </label>
+                
+                <input 
+                    type="radio" name="player"
+                    id="player2" class="input-hidden" onclick="setPlayer(1)"/>
+                <label for="player2">
+                    <img 
+                    src="./assets/textures/player2.jpg"/>
+                </label>
+
                 <p>Select Difficulty:</p>
                 <div class="slidecontainer">
                     <input style="margin: 0%;" type="range" min="30" step="10" max="100" value="40" class="slider" id="sliderDifficulty">
@@ -410,6 +428,13 @@
             window.localStorage.setItem('scenario', isDay);
         }
 
+        //Save prefs scenario
+        function setPlayer(value){
+            var isPlayer = value == 0;
+            window.localStorage.setItem('player', isPlayer);
+        }
+
+
         //Save pref antialias
         const checkbox = document.getElementById('checkbox')
 
@@ -432,6 +457,12 @@
             var isDay = window.localStorage.getItem("scenario") == "true"
             document.getElementById('day').checked = isDay
             document.getElementById('night').checked = !isDay
+        }
+
+        if(window.localStorage.getItem("player") !== null){
+            var isDay = window.localStorage.getItem("player") == "true"
+            document.getElementById('player1').checked = isDay
+            document.getElementById('player2').checked = !isDay
         }
 
         if(window.localStorage.getItem("antialias") !== null){

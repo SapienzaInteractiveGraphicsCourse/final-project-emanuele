@@ -623,61 +623,70 @@ function loadPlayer() {
     loader.setDRACOLoader(dracoLoader);
 
     loader.load('assets/player/player.gltf', function (gltf) {
-        newObjectLoaded()
+        loader.load('assets/player/player2.gltf', function (gltf2) {
 
-        //console.log(gltf)
-        playerObject = gltf.scene
-        scene.add(playerObject)
+            newObjectLoaded()
 
-        player = playerObject.getObjectByName("HipsCtrl");
-        torso = playerObject.getObjectByName("Chest");
-        head = playerObject.getObjectByName("Head");
-        neck = playerObject.getObjectByName("Neck");
-        leg_left = playerObject.getObjectByName("LeftLeg");
-        up_leg_left = playerObject.getObjectByName("LeftUpLeg");
-        leg_right = playerObject.getObjectByName("RightLeg");
-        up_leg_right = playerObject.getObjectByName("RightUpLeg");
-        arm_left = playerObject.getObjectByName("LeftArm");
-        forearm_left = playerObject.getObjectByName("LeftForeArm");
-        hand_left = playerObject.getObjectByName("LeftHand");
-        arm_right = playerObject.getObjectByName("RightArm");
-        forearm_right = playerObject.getObjectByName("RightForeArm");
-        hand_right = playerObject.getObjectByName("RightHand");
-        upper_chest = playerObject.getObjectByName("UpperChest");
-
-        arm_right.rotation.z = 180 * Math.PI / 180;
-        arm_right.rotation.x = 230 * Math.PI / 180;
-
-        arm_left.rotation.z = 180 * Math.PI / 180;
-        arm_left.rotation.x = 140 * Math.PI / 180;
-
-        player.scale.set(1.2, 1.2, 1.2)
-        player.position.y = 1.3
-
-        player.rotation.y = 180 * Math.PI / 180;
-        player.rotation.x = 0 * Math.PI / 180;
-
-        up_leg_right.rotation.x = 140 * Math.PI / 180;
-        forearm_left.rotation.x = 90 * Math.PI / 180;
-
-        //Collisions
-        var player_box = new THREE.BoxGeometry(0.8, 2, 0.5); 
-        var player_material = new THREE.MeshBasicMaterial({transparent: true, opacity: 0.1, color:0xff0000});
-        var player_hitBox = new THREE.Mesh(player_box, player_material);
-        player_hitBox.visible = false;
-        scene.add(player_hitBox)
-        player.add(player_hitBox)
-
-        var colliderPlayer = THREEx.Collider.createFromObject3d(player_hitBox)
-        colliders.push(colliderPlayer)
-
-        colliderPlayer.addEventListener('contactEnter', function (collider) {
-            if(collider.object3d.name == "zombie" || collider.object3d.name == "spikes"){
-                damagePlayer()
+            var loadedPlayer = window.localStorage.getItem("player")
+            if(loadedPlayer == "true" || loadedPlayer === null){
+                playerObject = gltf.scene
+                
+            }else {
+                playerObject = gltf2.scene
             }
-        })
 
-        animatePlayer()
+            scene.add(playerObject)
+
+            player = playerObject.getObjectByName("HipsCtrl");
+            torso = playerObject.getObjectByName("Chest");
+            head = playerObject.getObjectByName("Head");
+            neck = playerObject.getObjectByName("Neck");
+            leg_left = playerObject.getObjectByName("LeftLeg");
+            up_leg_left = playerObject.getObjectByName("LeftUpLeg");
+            leg_right = playerObject.getObjectByName("RightLeg");
+            up_leg_right = playerObject.getObjectByName("RightUpLeg");
+            arm_left = playerObject.getObjectByName("LeftArm");
+            forearm_left = playerObject.getObjectByName("LeftForeArm");
+            hand_left = playerObject.getObjectByName("LeftHand");
+            arm_right = playerObject.getObjectByName("RightArm");
+            forearm_right = playerObject.getObjectByName("RightForeArm");
+            hand_right = playerObject.getObjectByName("RightHand");
+            upper_chest = playerObject.getObjectByName("UpperChest");
+
+            arm_right.rotation.z = 180 * Math.PI / 180;
+            arm_right.rotation.x = 230 * Math.PI / 180;
+
+            arm_left.rotation.z = 180 * Math.PI / 180;
+            arm_left.rotation.x = 140 * Math.PI / 180;
+
+            player.scale.set(1.2, 1.2, 1.2)
+            player.position.y = 1.3
+
+            player.rotation.y = 180 * Math.PI / 180;
+            player.rotation.x = 0 * Math.PI / 180;
+
+            up_leg_right.rotation.x = 140 * Math.PI / 180;
+            forearm_left.rotation.x = 90 * Math.PI / 180;
+
+            //Collisions
+            var player_box = new THREE.BoxGeometry(0.8, 2, 0.5); 
+            var player_material = new THREE.MeshBasicMaterial({transparent: true, opacity: 0.1, color:0xff0000});
+            var player_hitBox = new THREE.Mesh(player_box, player_material);
+            player_hitBox.visible = false;
+            scene.add(player_hitBox)
+            player.add(player_hitBox)
+
+            var colliderPlayer = THREEx.Collider.createFromObject3d(player_hitBox)
+            colliders.push(colliderPlayer)
+
+            colliderPlayer.addEventListener('contactEnter', function (collider) {
+                if(collider.object3d.name == "zombie" || collider.object3d.name == "spikes"){
+                    damagePlayer()
+                }
+            })
+
+            animatePlayer()
+        })
     })
   }
 
