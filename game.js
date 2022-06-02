@@ -5,14 +5,17 @@ import { OrbitControls } from "./libs/OrbitControls.js"
 
 var canvas, scene, dirLight, renderer, camera, skybox, materialArraySky
 var playerObject
-var torso, player, leg_left, up_leg_left, leg_right, up_leg_right, arm_left, forearm_left, hand_left, head, arm_right, forearm_right, hand_right, neck, floor, floor1
+var torso, player, upper_chest, leg_left, up_leg_left, leg_right, up_leg_right, arm_left, forearm_left, hand_left, head, arm_right, forearm_right, hand_right, neck, floor, floor1
 var step = 160
-var speed = 0.2
+
+var defaultSpeed = 0.2
+var speed = 0.0
 
 var randBuildingPosLeft
 var randBuildingPosRight
 
 var enemiesNumber = 20
+var obstaclesNumber = 5
 
 var enemiesArray = []
 
@@ -21,9 +24,10 @@ var collider_system;
 var colliders = [];
 
 //UIs
-var lifeCount = 3
+var lifeCount = 5
 var lifeLabel
 var scoreLabel
+var loading
 
 //Light poles
 var pointLights = []
@@ -32,12 +36,13 @@ var isDay = true
 
 //Clock
 var clock
+var loadedObjects = 0
+var totObjects = 13
 
 
 var keyboard = {}
 
 function init(){
-    setUpSpeed()
     setUpClock()
     setUpUI()
     setUpColliderSystem()
@@ -49,14 +54,24 @@ function init(){
 }
 function setUpSpeed(){
     var loadedSpeed = window.localStorage.getItem("difficulty")
-    speed = loadedSpeed === null ? speed : loadedSpeed / 200
+    speed = loadedSpeed === null ? defaultSpeed : loadedSpeed / 200
 }
+
+function getSpeed(){
+    var loadedSpeed = window.localStorage.getItem("difficulty")
+    var currentSpeed = loadedSpeed === null ? defaultSpeed : loadedSpeed / 200
+    return currentSpeed
+}
+
 function setUpClock(){
     clock = new THREE.Clock();
 }
 
 function setUpUI(){
     var body = document.body;
+    //LOADING
+    loading = document.getElementById("loading")
+    loading.innerHTML = 0 + " %"
 
     //LIFE
     var life = document.createElement('div');
@@ -86,16 +101,46 @@ function setUpUI(){
     score.appendChild(scoreLabel);
 
 }
+function newObjectLoaded(){
+    loadedObjects++
+    loading.innerHTML = Math.floor(loadedObjects * 100 / totObjects) + " %"
+
+    if(loadedObjects == totObjects){
+        setUpSpeed()
+    }
+}
 
 function decreaseLife(){
-    if(scoreLabel.innerHTML > 2){
+    if(scoreLabel.innerHTML > 3){
         lifeCount -= 1
         lifeLabel.innerHTML = lifeCount
+
+        if(lifeCount <= 0){
+            clock.stop()
+            player.position.y = -6
+            var finalScore = document.getElementById("finalScore")
+            finalScore.innerHTML = scoreLabel.innerHTML
+            var modal = document.getElementById("modalGameover")
+            modal.style.display = "block";
+        }
     }
 }
 
 function increaseScore(){
-    scoreLabel.innerHTML =  Math.floor(clock.getElapsedTime());
+    if(loadedObjects == totObjects)  // increase score just after loading
+    {
+        scoreLabel.innerHTML =  Math.floor(clock.getElapsedTime())
+    
+        if(scoreLabel.innerHTML < 3) // Countdown
+        {
+            loading.setAttribute('class', 'countdown')
+            loading.innerHTML = 3 - Math.floor(clock.getElapsedTime())    
+        } else // end countdown 
+        { 
+            loading.innerHTML = ""
+        }
+
+    }
 }
 
 function setUpColliderSystem() {
@@ -123,6 +168,26 @@ function setUpSkybox(){
 
     var skyboxGeo = new THREE.BoxGeometry(100, 100, 160)
     skybox = new THREE.Mesh(skyboxGeo, materialArraySky)
+
+}
+
+function animatePlayerJump(){
+
+    // JUMP
+    createjs.Tween.get(up_leg_right.rotation).to({ x: 90 * Math.PI/180 }, 300, createjs.Ease.linear).to({ x: 180 * Math.PI/180 }, 300, createjs.Ease.linear);
+    createjs.Tween.get(up_leg_left.rotation).to({ x: 90 * Math.PI/180 }, 300, createjs.Ease.linear).to({ x: 180 *Math.PI/180 }, 300, createjs.Ease.linear);
+
+    //legs
+    createjs.Tween.get(leg_right.rotation).to({ x: 90 * Math.PI/180 }, 300, createjs.Ease.linear).to({ x:  30 * Math.PI/180 }, 300, createjs.Ease.linear);
+    createjs.Tween.get(leg_left.rotation).to({ x: 60 * Math.PI/180 }, 300, createjs.Ease.linear).to({ x: Math.PI/180 }, 300, createjs.Ease.linear);
+
+    //arms
+    createjs.Tween.get(arm_right.rotation, ).to({ y: -30 * Math.PI/180 }, 300, createjs.Ease.linear).to({ y: Math.PI/180 }, 300, createjs.Ease.linear);
+    
+    //Upper chest
+    createjs.Tween.get(upper_chest.rotation).to({ x: 60 * Math.PI/180 }, 300, createjs.Ease.linear).to({ x: Math.PI/180 }, 300, createjs.Ease.linear);
+
+    createjs.Tween.get(player.position).to({ y: 3 }, 300, createjs.Ease.linear).to({ y: 1.3 }, 300, createjs.Ease.linear);
 
 }
 
@@ -247,7 +312,8 @@ function animate() {
     //collisions
     for (var i = 0; i < colliders.length ; i++) {
         colliders[i].update();
-      }
+    }
+
     collider_system.computeAndNotify(colliders);
 
 
@@ -294,6 +360,10 @@ function animate() {
         player.position.x -= 0.2
     }
 
+    if(keyboard[32] && player.position.y == 1.3){ // space key
+        animatePlayerJump()
+    }
+
     renderer.render(scene, camera)
 }
 
@@ -320,8 +390,35 @@ function loadEnemies(){
     dracoLoader.setDecoderPath('libs/draco/');
     loader.setDRACOLoader(dracoLoader);
 
+    loader.load('assets/models/spikes.glb', function (glb) {
+        newObjectLoaded()
+
+        for (var i = 0; i < obstaclesNumber; i++) {
+            var spikes = glb.scene.clone()
+            scene.add(spikes)
+
+            spikes.scale.set(3, 3, 4 * getSpeed())
+            spikes.position.set(getRandomValue(-3, 3), -0.1, (i * step/obstaclesNumber) - 80)
+            enemiesArray.push(spikes)
+
+
+            //Collisions
+            var spikes_box = new THREE.BoxGeometry(0.8, 0.5, 0.8); 
+            var spikes_material = new THREE.MeshBasicMaterial({transparent: true, opacity: 0.1, color:0x00ff00});
+            var spikes_hitBox = new THREE.Mesh(spikes_box, spikes_material);
+            spikes_hitBox.visible = false;
+            spikes_hitBox.name= "spikes"
+            scene.add(spikes_hitBox)
+            spikes.add(spikes_hitBox)
+
+            var colliderspikes = THREEx.Collider.createFromObject3d(spikes_hitBox)
+            colliders.push(colliderspikes)
+        }
+    })
 
     loader.load('assets/player/zombie.gltf', function (gltf) {
+        newObjectLoaded()
+
         for (var i = 0; i < enemiesNumber; i++) {
             var zombieObject = cloneGltf(gltf).scene
             scene.add(zombieObject)
@@ -387,6 +484,7 @@ function loadProps() {
 
 
     loader.load('assets/models/light_curved.glb', function (glb) {
+        newObjectLoaded()
 
         for(var i = 0; i < 10; i++){
             if (i%2 == 0)
@@ -435,6 +533,7 @@ function loadProps() {
 
     loader.load('assets/models/treeLarge.glb', function (glb) {
         loader.load('assets/models/treeFallLarge.glb', function (glb2) {
+            newObjectLoaded()
 
             for(var i = 0; i < 30; i++){
 
@@ -462,11 +561,13 @@ function loadProps() {
     })
 
     loader.load('assets/models/road_straight.glb', function (glb) {
-            var prop = glb.scene.clone()
-            prop.scale.set(180, 10, 10)
-            prop.position.set( 8, 0, -20)
-            scene.add(prop)
-            prop.rotation.y = ( -90)*  Math.PI / 180
+        newObjectLoaded()
+
+        var prop = glb.scene.clone()
+        prop.scale.set(180, 10, 10)
+        prop.position.set( 8, 0, -20)
+        scene.add(prop)
+        prop.rotation.y = ( -90)*  Math.PI / 180
     })
 
     loadBuilding('house_type01.glb', 2)
@@ -482,6 +583,7 @@ function loadProps() {
 function loadBuilding(buildingFilename, count){
     const loader = new GLTFLoader()
     loader.load('assets/models/' + buildingFilename, function (glb) {
+        newObjectLoaded() // it adds overall 7 buildings
 
         for(var i = 0; i < count; i++){
 
@@ -521,6 +623,8 @@ function loadPlayer() {
     loader.setDRACOLoader(dracoLoader);
 
     loader.load('assets/player/player.gltf', function (gltf) {
+        newObjectLoaded()
+
         //console.log(gltf)
         playerObject = gltf.scene
         scene.add(playerObject)
@@ -539,6 +643,7 @@ function loadPlayer() {
         arm_right = playerObject.getObjectByName("RightArm");
         forearm_right = playerObject.getObjectByName("RightForeArm");
         hand_right = playerObject.getObjectByName("RightHand");
+        upper_chest = playerObject.getObjectByName("UpperChest");
 
         arm_right.rotation.z = 180 * Math.PI / 180;
         arm_right.rotation.x = 230 * Math.PI / 180;
@@ -556,7 +661,7 @@ function loadPlayer() {
         forearm_left.rotation.x = 90 * Math.PI / 180;
 
         //Collisions
-        var player_box = new THREE.BoxGeometry(1, 3, 1); 
+        var player_box = new THREE.BoxGeometry(0.8, 2, 0.5); 
         var player_material = new THREE.MeshBasicMaterial({transparent: true, opacity: 0.1, color:0xff0000});
         var player_hitBox = new THREE.Mesh(player_box, player_material);
         player_hitBox.visible = false;
@@ -567,8 +672,8 @@ function loadPlayer() {
         colliders.push(colliderPlayer)
 
         colliderPlayer.addEventListener('contactEnter', function (collider) {
-            if(collider.object3d.name == "zombie"){
-                zombieHitPlayer()
+            if(collider.object3d.name == "zombie" || collider.object3d.name == "spikes"){
+                damagePlayer()
             }
         })
 
@@ -576,7 +681,7 @@ function loadPlayer() {
     })
   }
 
-  function zombieHitPlayer() {
+  function damagePlayer() {
     decreaseLife()
 
     playerObject.traverse((child) => {
