@@ -2,4 +2,4 @@
 Made By Donato Emanuele Mele
 
 
-# [PLAY](https://sapienzainteractivegraphicscourse.github.io/final-project-emanuele/index.html)
+# [Play Game](https://sapienzainteractivegraphicscourse.github.io/final-project-emanuele/index.html)
