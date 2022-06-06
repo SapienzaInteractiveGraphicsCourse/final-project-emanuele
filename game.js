@@ -27,7 +27,6 @@ var colliders = [];
 var lifeCount = 5
 var lifeLabel
 var scoreLabel
-var loading
 
 //Light poles
 var pointLights = []
@@ -36,8 +35,10 @@ var isDay = true
 
 //Clock
 var clock
-var loadedObjects = 0
-var totObjects = 13
+const loadingManager = new THREE.LoadingManager()
+const loading = document.getElementById("loading")
+const loader = new GLTFLoader(loadingManager);
+var loaded = false
 
 
 var keyboard = {}
@@ -52,6 +53,17 @@ function init(){
     setUpScene()
     animate()
 }
+
+loadingManager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
+    console.log(itemsLoaded * 100 / itemsTotal)
+    loading.innerHTML = Math.floor(itemsLoaded * 100 / itemsTotal) + " %"
+};
+
+loadingManager.onLoad = function ( ) {
+    loaded = true
+	setUpSpeed()
+};
+
 function setUpSpeed(){
     var loadedSpeed = window.localStorage.getItem("difficulty")
     speed = loadedSpeed === null ? defaultSpeed : loadedSpeed / 200
@@ -65,13 +77,14 @@ function getSpeed(){
 
 function setUpClock(){
     clock = new THREE.Clock();
+
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('libs/draco/');
+    loader.setDRACOLoader(dracoLoader);
 }
 
 function setUpUI(){
     var body = document.body;
-    //LOADING
-    loading = document.getElementById("loading")
-    loading.innerHTML = 0 + " %"
 
     //LIFE
     var life = document.createElement('div');
@@ -101,14 +114,6 @@ function setUpUI(){
     score.appendChild(scoreLabel);
 
 }
-function newObjectLoaded(){
-    loadedObjects++
-    loading.innerHTML = Math.floor(loadedObjects * 100 / totObjects) + " %"
-
-    if(loadedObjects == totObjects){
-        setUpSpeed()
-    }
-}
 
 function decreaseLife(){
     if(scoreLabel.innerHTML > 3){
@@ -127,19 +132,17 @@ function decreaseLife(){
 }
 
 function increaseScore(){
-    if(loadedObjects == totObjects)  // increase score just after loading
-    {
+    if(loaded) {
         scoreLabel.innerHTML =  Math.floor(clock.getElapsedTime())
-    
+
         if(scoreLabel.innerHTML < 3) // Countdown
         {
             loading.setAttribute('class', 'countdown')
-            loading.innerHTML = 3 - Math.floor(clock.getElapsedTime())    
+            loading.innerHTML = 3 - scoreLabel.innerHTML    
         } else // end countdown 
-        { 
+        {
             loading.innerHTML = ""
         }
-
     }
 }
 
@@ -304,8 +307,6 @@ function loadFloor(){
 }
 
 function animate() {
-    requestAnimationFrame(animate)
-
     //score
     increaseScore()
 
@@ -365,6 +366,8 @@ function animate() {
     }
 
     renderer.render(scene, camera)
+
+    requestAnimationFrame(animate)
 }
 
 function getPropPositions(){
@@ -384,14 +387,8 @@ function popPropPosition(array){
 }
 
 function loadEnemies(){
-    const loader = new GLTFLoader()
-
-    const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath('libs/draco/');
-    loader.setDRACOLoader(dracoLoader);
-
     loader.load('assets/models/spikes.glb', function (glb) {
-        newObjectLoaded()
+        
 
         for (var i = 0; i < obstaclesNumber; i++) {
             var spikes = glb.scene.clone()
@@ -417,7 +414,7 @@ function loadEnemies(){
     })
 
     loader.load('assets/player/zombie.gltf', function (gltf) {
-        newObjectLoaded()
+        
 
         for (var i = 0; i < enemiesNumber; i++) {
             var zombieObject = cloneGltf(gltf).scene
@@ -478,13 +475,12 @@ function loadEnemies(){
 }
 
 function loadProps() {
-    const loader = new GLTFLoader()
     randBuildingPosLeft =  getPropPositions()
     randBuildingPosRight =  getPropPositions()
 
 
     loader.load('assets/models/light_curved.glb', function (glb) {
-        newObjectLoaded()
+        
 
         for(var i = 0; i < 10; i++){
             if (i%2 == 0)
@@ -533,7 +529,7 @@ function loadProps() {
 
     loader.load('assets/models/treeLarge.glb', function (glb) {
         loader.load('assets/models/treeFallLarge.glb', function (glb2) {
-            newObjectLoaded()
+            
 
             for(var i = 0; i < 30; i++){
 
@@ -541,7 +537,7 @@ function loadProps() {
                 var randGlb = Math.random() > 0.5 ? glb : glb2;
                 var prop = randGlb.scene.clone()
                 prop.scale.set(4, 4, 4)
-                prop.position.set( -8 + getRandomValue(-1, 1), (i * 5.3) -80, 0)
+                prop.position.set( -8 + getRandomValue(-1, 1),  (i * step/30) - 80, 0)
                 scene.add(prop)
                 prop.rotation.x = ( -90)*  Math.PI / 180
                 floor.add(prop)
@@ -551,7 +547,7 @@ function loadProps() {
                 var randGlb = Math.random() > 0.5 ? glb : glb2;
                 var prop = randGlb.scene.clone()
                 prop.scale.set(4, 4, 4)
-                prop.position.set( 8 + getRandomValue(-1, 1), (i * 5.3) -80, 0)
+                prop.position.set( 8 + getRandomValue(-1, 1),  (i * step/30) - 80, 0)
                 scene.add(prop)
                 prop.rotation.x = ( -90)*  Math.PI / 180
                 floor.add(prop)
@@ -561,7 +557,7 @@ function loadProps() {
     })
 
     loader.load('assets/models/road_straight.glb', function (glb) {
-        newObjectLoaded()
+        
 
         var prop = glb.scene.clone()
         prop.scale.set(180, 10, 10)
@@ -581,9 +577,8 @@ function loadProps() {
 }
 
 function loadBuilding(buildingFilename, count){
-    const loader = new GLTFLoader()
     loader.load('assets/models/' + buildingFilename, function (glb) {
-        newObjectLoaded() // it adds overall 7 buildings
+         // it adds overall 7 buildings
 
         for(var i = 0; i < count; i++){
 
@@ -616,16 +611,11 @@ function getRandomValue(min, max) {
   }
 
 function loadPlayer() {
-    const loader = new GLTFLoader()
-
-    const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath('libs/draco/');
-    loader.setDRACOLoader(dracoLoader);
 
     loader.load('assets/player/player.gltf', function (gltf) {
         loader.load('assets/player/player2.gltf', function (gltf2) {
 
-            newObjectLoaded()
+            
 
             var loadedPlayer = window.localStorage.getItem("player")
             if(loadedPlayer == "true" || loadedPlayer === null){
@@ -713,7 +703,7 @@ function loadPlayer() {
     keyboard[event.keyCode] = false
   }
 
-  window.onload = init;
+  window.addEventListener('load', init)
   window.addEventListener('keydown', keyDown)
   window.addEventListener('keyup', keyUp)
 
