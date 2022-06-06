@@ -1,2 +1,5 @@
-# Zombie Runner
-made by Donato Emanuele Mele 1753058
+# Zombie Runner - Interactive Graphics 2021/2022
+Made By Donato Emanuele Mele
+
+
+# [Play Game](https://sapienzainteractivegraphicscourse.github.io/final-project-emanuele/index.html)
