@@ -55,7 +55,7 @@ function init(){
 }
 
 loadingManager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
-    console.log(itemsLoaded * 100 / itemsTotal)
+    //console.log(itemsLoaded * 100 / itemsTotal)
     loading.innerHTML = Math.floor(itemsLoaded * 100 / itemsTotal) + " %"
 };
 
