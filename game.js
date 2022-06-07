@@ -152,12 +152,12 @@ function setUpColliderSystem() {
 
 function setUpSkybox(){
     materialArraySky = []
-    var texture_down = new THREE.TextureLoader().load("/assets/skybox/day_down.png")
-    var texture_left = new THREE.TextureLoader().load("/assets/skybox/day_left.png")
-    var texture_front = new THREE.TextureLoader().load("/assets/skybox/day_front.png")
-    var texture_back = new THREE.TextureLoader().load("/assets/skybox/day_back.png")
-    var texture_up = new THREE.TextureLoader().load("/assets/skybox/day_up.png")
-    var texture_right = new THREE.TextureLoader().load("/assets/skybox/day_right.png")
+    var texture_down = new THREE.TextureLoader().load("./assets/skybox/day_down.png")
+    var texture_left = new THREE.TextureLoader().load("./assets/skybox/day_left.png")
+    var texture_front = new THREE.TextureLoader().load("./assets/skybox/day_front.png")
+    var texture_back = new THREE.TextureLoader().load("./assets/skybox/day_back.png")
+    var texture_up = new THREE.TextureLoader().load("./assets/skybox/day_up.png")
+    var texture_right = new THREE.TextureLoader().load("./assets/skybox/day_right.png")
 
     materialArraySky.push(new THREE.MeshBasicMaterial({map: texture_front}))
     materialArraySky.push(new THREE.MeshBasicMaterial({map: texture_back}))
